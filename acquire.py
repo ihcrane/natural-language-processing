@@ -2,6 +2,13 @@ from env import get_connection
 import pandas as pd
 import os
 
+import json
+import re
+from requests import get
+
+from bs4 import BeautifulSoup
+
+
 def get_titanic_data():
     
     '''
@@ -149,4 +156,98 @@ def get_curriculum_logs():
         df = pd.read_sql(query, url)
         df.to_csv('curriculum_logs.csv')
         return df
+    
+def get_blog_articles(url):
+    
+    file = 'blog_posts.json'
+    
+    if os.path.exists(file):
+        
+        with open(file) as f:
+            
+            return json.load(f)
+        
+    listofdicts = []
+    headers = {'User-Agent': 'Codeup Data Science'}
+    
+    response = get(url, headers=headers)
+    soup = BeautifulSoup(response.content, 'html.parser')
+    
+    more_links = soup.find_all('a', class_='more-link')
+    url_list = [link['href'] for link in more_links]
+    
+    for url in url_list:
+        response = get(url, headers=headers)
+        soup = BeautifulSoup(response.content, 'html.parser')
+
+        title = soup.title.text
+
+        listofelements = soup.find_all('p')
+        listofpara = []
+
+        for element in listofelements:
+            if element.a == None:
+                listofpara.append(element.text) 
+
+        content = ' '.join(listofpara)
+
+        article = {'title':title,
+                   'date_published':soup.find('span',class_='published').text,
+                   'content':content}
+
+        listofdicts.append(article)
+    
+    with open(file, 'w') as f:
+        
+        json.dump(listofdicts, f)
+    
+    return listofdicts
+
+
+def scrape_one_page(topic):
+    
+    base_url = 'https://inshorts.com/en/read/'
+    
+    response = get(base_url + topic)
+    
+    soup = BeautifulSoup(response.content, 'html.parser')
+    
+    titles = soup.find_all('span', itemprop='headline')
+    
+    summaries = soup.find_all('div', itemprop='articleBody')
+    
+    summary_list = []
+    
+    for i in range(len(titles)):
+        
+        temp_dict = {'category': topic,
+                     'title': titles[i].text,
+                     'content': summaries[i].text}
+        
+        summary_list.append(temp_dict)
+        
+    return summary_list 
+
+
+def get_news_articles(topic_list):
+    
+    file = 'news_articles.json'
+    
+    if os.path.exists(file):
+        
+        with open(file) as f:
+            
+            return json.load(f)
+    
+    final_list = []
+    
+    for topic in topic_list:
+        
+        final_list.extend(scrape_one_page(topic))
+        
+    with open(file, 'w') as f:
+        
+        json.dump(final_list, f)
+        
+    return final_list 
     

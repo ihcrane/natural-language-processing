@@ -297,3 +297,56 @@ def rfe(df, cont, cat, y, k):
     # returns created data frame of feature rankings
     return feature_ranks.sort_values('ranking')
     
+
+def clean_data(string):
+    
+    string = string.lower()
+    
+    string = unicodedata.normalize('NFKD', string).encode('ascii', 'ignore').decode('utf-8')
+    
+    string = re.sub(r'[^a-z0-9\s]', '', string)
+    
+    return string
+
+def tokenize(string):
+    
+    tokenize = nltk.tokenize.ToktokTokenizer()
+    
+    tokens = tokenize.tokenize(string)
+    
+    return tokens
+
+def stem(tokens):
+    
+    ps = nltk.porter.PorterStemmer()
+    
+    ps.stem('calling'), ps.stem('calls'), ps.stem('called'), ps.stem('call')
+    ps.stem('house'), ps.stem('housing')
+    
+    stems = [ps.stem(word) for word in tokens]
+    
+    return ' '.join(stems)
+
+def lemmatize(tokens):
+    
+    wnl = nltk.stem.WordNetLemmatizer()
+    
+    wnl.lemmatize('calling'), wnl.lemmatize('calls'), wnl.lemmatize('called'), wnl.lemmatize('call')
+    wnl.lemmatize('house'), wnl.lemmatize('housing')
+    wnl.lemmatize('mouse'), wnl.lemmatize('mice')
+    
+    lemmas = [wnl.lemmatize(word) for word in tokens]
+    
+    return ' '.join(lemmas)
+
+
+def remove_stopwords(string, extra_words=[], exclude_words=[]):
+    
+    stopwords_english = stopwords.words('english')
+    
+    stopwords_english.extend(extra_words)
+    stopwords_english = [word for word in stopwords_english if word not in exclude_words]
+    
+    string_with_stopwords_removed = [word for word in string if word not in stopwords_english]
+    
+    return ' '.join(string_with_stopwords_removed)
